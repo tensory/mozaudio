@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>JavaScript Audio Write Example</title>
+    <style type="text/css">
+    #knob {
+        background-color: #FFFFFF;
+    }
+    #container {
+    	position: block;
+    	padding: 0 100px;
+    }
+    .circle {
+
+    	top: 100px;
+		width: 200px;
+		height: 200px;
+		background-color: #eeeeee;
+		border-color: #FF0000;
+		border-style: solid;
+		border-width: 5px;
+		border-radius: 50%;
+        padding: 5px;
+		text-align: center;
+		line-height: 200px;
+		font-family: arial, serif;
+		font-size: 30px;
+
+
+		/* Firefox */
+		-moz-transform: rotate(-160deg);
+	}
+	#nick {
+		width: 10px;
+		height: 30px;
+		background-color: #000000;
+		left: 95px;
+		top: -10px;
+		position: relative;
+	}
+    </style>
+  </head>
+  <body>
+  	<script type="text/javascript" src="http://code.jquery.com/jquery-1.10.0.min.js"></script>
+
+    <input type="text" size="4" id="freq" value="440"><label for="hz">Hz</label>
+    <button onclick="start()">play</button>
+    <button onclick="stop()">stop</button>
+
+    <div id="container">
+      <div id="knob" class="circle">
+        <div id="nick"></div>
+      </div>
+    </div>
+      <script type="text/javascript">
+      function AudioDataDestination(sampleRate, readFn) {
+        // Initialize the audio output.
+        var audio = new Audio();
+        audio.mozSetup(1, sampleRate);
+
+        var currentWritePosition = 0;
+        var prebufferSize = sampleRate / 2; // buffer 500ms
+        var tail = null, tailPosition;
+
+        // The function called with regular interval to populate
+        // the audio output buffer.
+        setInterval(function() {
+          var written;
+          // Check if some data was not written in previous attempts.
+          if(tail) {
+            written = audio.mozWriteAudio(tail.subarray(tailPosition));
+            currentWritePosition += written;
+            tailPosition += written;
+            if(tailPosition < tail.length) {
+              // Not all the data was written, saving the tail...
+              return; // ... and exit the function.
+            }
+            tail = null;
+          }
+
+          // Check if we need add some data to the audio output.
+          var currentPosition = audio.mozCurrentSampleOffset();
+          var available = currentPosition + prebufferSize - currentWritePosition;
+          if(available > 0) {
+            // Request some sound data from the callback function.
+            var soundData = new Float32Array(available);
+            readFn(soundData);
+
+            // Writing the data.
+            written = audio.mozWriteAudio(soundData);
+            if(written < soundData.length) {
+              // Not all the data was written, saving the tail.
+              tail = soundData;
+              tailPosition = written;
+            }
+            currentWritePosition += written;
+          }
+        }, 100);
+      }
+
+      // Control and generate the sound.
+
+      var frequency = 0, currentSoundSample;
+      var sampleRate = 44100;
+
+      function requestSoundData(soundData) {
+        if (!frequency) {
+          return; // no sound selected
+        }
+
+        var k = 2* Math.PI * frequency / sampleRate;
+        for (var i=0, size=soundData.length; i<size; i++) {
+          soundData[i] = Math.sin(k * currentSoundSample++);
+        }
+      }
+
+      var audioDestination = new AudioDataDestination(sampleRate, requestSoundData);
+
+      function start() {
+        currentSoundSample = 0;
+        frequency = parseFloat(document.getElementById("freq").value);
+      }
+
+      function stop() {
+        frequency = 0;
+      }
+
+      var Knob = function() {
+          var knob = {
+              'diameter': 200,
+              'fns': {
+                  'getRotation': function(xpos) {
+                      if (xpos > knob.diameter) {
+                          xpos = knob.diameter;
+                      }
+                      var scalingFactor = 16 / 10;
+                      return xpos * scalingFactor - 160;
+                  }
+              }
+          };
+          return {
+              init: function(selector) {
+                   knob.$el = $('#' + selector);
+                   knob.face = $('#' + selector + ' .circle');
+                  console.log(knob.face);
+              },
+              getElement: function() {
+                  return knob.$el;
+              },
+              getKnobFace: function() {
+                  return knob.face;
+              },
+              updatePosition: function(xpos) {
+                  knob.lastXPos = xpos;
+                  rotateToDegrees = knob.fns.getRotation(xpos);
+                  $('#knob').css('-moz-transform', 'rotate('+rotateToDegrees+'deg)');
+
+              }
+          };
+      }
+      var isDraggingKnob = false;
+      var knob = new Knob();
+      knob.init('knob');
+      knob.getElement().on('mousedown', function() {
+          isDraggingKnob = true;
+      });
+      $(document).on('mouseup', function() {
+          isDraggingKnob = false;
+      });
+      $('#container').on('mousemove', function(e) {
+          if (isDraggingKnob) {
+              knob.updatePosition(e.clientX);
+          }
+      });
+  </script>
+  </body>
+</html>
