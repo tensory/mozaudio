@@ -1,8 +1,43 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>JavaScript Audio Write Example</title>
+    <title>Weird Hacks in Mozilla Web Audio</title>
     <style type="text/css">
+        #simple_play {
+            width: 400px;
+        }
+        .controls input {
+            height: 34px;
+            font-size: 30px;
+            margin: 0;
+        }
+
+        .controls label {
+            display: inline;
+            padding-left: 10px;
+            font-size: 20px;
+        }
+
+        .controls button {
+            height: 42px;
+            font-size: 1.5em;
+            margin: 0;
+            margin-right: 20px;
+            width: 50px;
+            text-align: center;
+            float: right;
+
+            background-color: lawngreen;
+        }
+
+
+        .controls button.stop {
+            font-size: 44px;
+            line-height: 42px;
+            background-color: deeppink;
+        }
+
+
     #knob {
         background-color: #FFFFFF;
     }
@@ -43,9 +78,12 @@
   <body>
   	<script type="text/javascript" src="http://code.jquery.com/jquery-1.10.0.min.js"></script>
 
-    <input type="text" size="4" id="freq" value="440"><label for="hz">Hz</label>
-    <button onclick="start()">play</button>
-    <button onclick="stop()">stop</button>
+    <div id="simple_play" class="controls">
+        <input type="text" size="4" id="freq" value="220"><label for="freq">Hz</label>
+
+        <button class="stop" onclick="stop()"><div style="margin: 0 auto; width: 18px; height: 18px; display: block; background-color: #000000">&nbsp;</div></button>
+        <button onclick="start()">&#9654;</button>
+    </div>
 
     <div id="container">
       <div id="knob" class="circle">
@@ -154,6 +192,8 @@
                   knob.lastXPos = xpos;
                   rotateToDegrees = knob.fns.getRotation(xpos);
                   $('#knob').css('-moz-transform', 'rotate('+rotateToDegrees+'deg)');
+
+                  frequency = xpos * 10;
 
               }
           };
